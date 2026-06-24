@@ -5,7 +5,7 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+LiquidCrystal_I2C lcd(0x27, 16, 2);//D1 WITH SCL AND D2 WITH SDA
 
 // Buttons
 #define WATER_BTN D5
@@ -17,6 +17,9 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 ESP8266WebServer server(80);
 DNSServer dnsServer;
+
+String webStatus = "All is Fine";
+unsigned long statusTime = 0;
 
 const byte DNS_PORT = 53;
 String lastMessage = "All is Fine";
@@ -131,7 +134,7 @@ else if(t.includes('Food')) s.className='status orange';
 else s.className='status red';
 });
 }
-setInterval(updateStatus,50);
+setInterval(updateStatus,20);
 updateStatus();
 </script>
 </body>
@@ -146,7 +149,7 @@ void handleRoot() {
 }
 
 void handleStatus() {
-  server.send(200, "text/plain", lastMessage);
+ server.send(200, "text/plain", webStatus);
 }
 
 void captivePortal() {
@@ -193,32 +196,44 @@ void loop() {
   dnsServer.processNextRequest();
   server.handleClient();
 
-  if (digitalRead(WATER_BTN) == LOW) {
+ if (digitalRead(WATER_BTN) == LOW)
+{
+    webStatus = "Need Water";
+    statusTime = millis();
+
     showMessage("Need Water");
+
+    server.handleClient();
+    dnsServer.processNextRequest();
+
     waterBeep();
-    
-      dnsServer.processNextRequest();
-      server.handleClient();
-      delay(1000);
-    
-  }
-  else if (digitalRead(FOOD_BTN) == LOW) {
+}
+  else if (digitalRead(FOOD_BTN) == LOW)
+{
+    webStatus = "Need Food";
+    statusTime = millis();
+
     showMessage("Need Food");
+
+    server.handleClient();
+    dnsServer.processNextRequest();
+
     foodBeep();
-    
-      dnsServer.processNextRequest();
-      server.handleClient();
-      delay(1000);
-    
-  }
-  else if (digitalRead(EMERGENCY_BTN) == LOW) {
+}
+  else if (digitalRead(EMERGENCY_BTN) == LOW)
+{
+    webStatus = "Emergency";
+    statusTime = millis();
+
     showMessage("Emergency");
+
+    server.handleClient();
+    dnsServer.processNextRequest();
+
     emergencyBeep();
-     dnsServer.processNextRequest();
-      server.handleClient();
-    delay(1000);
-  }
+}
   else {
+     webStatus = "All is Fine";
     showMessage("All is Fine");
   }
 
